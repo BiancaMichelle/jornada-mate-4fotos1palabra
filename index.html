@@ -844,6 +844,7 @@
 
     <script>
       const STORAGE_KEY = 'jornada_mate_ranking_v1';
+      const CLOUD_RANKING_URL = 'https://api.sheetbest.com/sheets/ff4707ef-868c-4b6d-821a-f3fb4f7988a2';
 
       const levels = [
         {
@@ -1169,13 +1170,69 @@
         });
       }
 
-      function saveRanking(entry) {
+      function normalizeRankingRow(entry) {
+        return {
+          name: entry.name || entry.Nombre || 'Sin nombre',
+          score: Number(entry.score ?? entry.Puntaje ?? 0),
+          time: Number(entry.time ?? entry.Tiempo ?? 0),
+          errors: Number(entry.errors ?? entry.Errores ?? 0)
+        };
+      }
+
+      async function fetchCloudRanking() {
+        if (!CLOUD_RANKING_URL || CLOUD_RANKING_URL.includes('your-sheet')) {
+          return getRanking();
+        }
+
+        try {
+          const response = await fetch(CLOUD_RANKING_URL, { method: 'GET' });
+          if (!response.ok) throw new Error('Cloud ranking unavailable');
+
+          const data = await response.json();
+          const mapped = Array.isArray(data) ? data.map(normalizeRankingRow) : [];
+
+          if (mapped.length > 0) {
+            localStorage.setItem(STORAGE_KEY, JSON.stringify(mapped));
+          }
+
+          return mapped;
+        } catch (error) {
+          console.warn('No se pudo sincronizar con la nube, usando localStorage.', error);
+          return getRanking();
+        }
+      }
+
+      async function saveRanking(entry) {
         const currentRanking = getRanking();
         currentRanking.push(entry);
 
         const sorted = sortRanking(currentRanking);
         localStorage.setItem(STORAGE_KEY, JSON.stringify(sorted));
+
+        if (CLOUD_RANKING_URL && !CLOUD_RANKING_URL.includes('your-sheet')) {
+          try {
+            const response = await fetch(CLOUD_RANKING_URL, {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify([{
+                name: entry.name,
+                score: entry.score,
+                time: entry.time,
+                errors: entry.errors ?? 0
+              }])
+            });
+
+            if (!response.ok) {
+              throw new Error('POST failed');
+            }
+          } catch (error) {
+            console.warn('No se pudo guardar en la nube, se dejó el registro local.', error);
+          }
+        }
+
         renderRanking();
+        updatePodium();
+        renderOrganizerPodium();
       }
 
       function renderRanking() {
@@ -1302,7 +1359,7 @@
         registerMessage.className = 'register-message';
       }
 
-      function beginGame() {
+      async function beginGame() {
         const name = playerNameInput.value.trim();
 
         if (!name) {
@@ -1311,7 +1368,7 @@
           return;
         }
 
-        const ranking = getRanking();
+        const ranking = await fetchCloudRanking();
         const duplicateName = ranking.some((entry) => normalizeText(entry.name) === normalizeText(name));
 
         if (duplicateName) {
@@ -1369,6 +1426,16 @@
       updateOrganizerView('qr');
       updateTimerDisplay();
 
+      async function refreshRankingFromCloud() {
+        const remoteRanking = await fetchCloudRanking();
+        if (remoteRanking && remoteRanking.length) {
+          localStorage.setItem(STORAGE_KEY, JSON.stringify(remoteRanking));
+        }
+        renderRanking();
+        updatePodium();
+        renderOrganizerPodium();
+      }
+
       window.addEventListener('storage', () => {
         renderRanking();
         updatePodium();
@@ -1376,10 +1443,8 @@
       });
 
       setInterval(() => {
-        if (organizerScreen.classList.contains('active') && !qrView.classList.contains('active')) {
-          renderOrganizerPodium();
-        }
-      }, 2000);
+        refreshRankingFromCloud();
+      }, 5000);
     </script>
 
     <!--
