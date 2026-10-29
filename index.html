@@ -643,6 +643,53 @@
         background: rgba(255, 255, 255, 0.03);
       }
 
+      .organizer-admin {
+        display: grid;
+        gap: 14px;
+      }
+
+      .admin-actions {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 10px;
+      }
+
+      .admin-actions button {
+        flex: 1 1 180px;
+      }
+
+      .danger-btn {
+        background: #b9484d;
+        color: white;
+      }
+
+      .admin-status {
+        min-height: 20px;
+        margin: 0;
+        color: #d7e7db;
+        font-size: 0.85rem;
+      }
+
+      .admin-login {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 10px;
+      }
+
+      .admin-login .field {
+        flex: 1 1 180px;
+        width: auto;
+        margin: 0;
+      }
+
+      .delete-participant-btn {
+        padding: 6px 8px;
+        border-radius: 8px;
+        background: rgba(185, 72, 77, 0.9);
+        color: white;
+        font-size: 0.7rem;
+      }
+
       .actions {
         margin-top: 18px;
       }
@@ -677,6 +724,7 @@
       <div class="organizer-controls" aria-label="Controles del organizador">
         <button id="qrBtn" class="organizer-btn" type="button">📱 Ver Código QR</button>
         <button id="podioBtn" class="organizer-btn secondary" type="button">🏆 Ver Podio en Vivo</button>
+        <button id="manageBtn" class="organizer-btn secondary" type="button">🔐 Gestionar Ranking</button>
         <button id="backToGameBtn" class="organizer-btn secondary" type="button">🎮 Volver al Inicio / Juego</button>
       </div>
 
@@ -837,6 +885,30 @@
                 <tbody id="organizerRankingBody"></tbody>
               </table>
             </div>
+
+            <div id="adminView" class="organizer-view">
+              <div class="organizer-admin">
+                <p id="adminStatus" class="admin-status" aria-live="polite">La gestión está bloqueada.</p>
+                <div id="adminLogin" class="admin-login">
+                  <input id="adminPassword" class="field" type="password" placeholder="Clave del organizador" autocomplete="current-password" />
+                  <button id="unlockAdminBtn" class="primary-btn" type="button">Acceder</button>
+                </div>
+                <div id="adminActions" class="admin-actions" hidden>
+                  <button id="resetRankingBtn" class="danger-btn" type="button">Resetear todo el ranking</button>
+                  <button id="lockAdminBtn" class="ghost-btn" type="button">Bloquear gestión</button>
+                </div>
+                <table id="adminRankingTable" class="organizer-ranking-table" hidden>
+                  <thead>
+                    <tr>
+                      <th>Jugador</th>
+                      <th>Puntos</th>
+                      <th>Acción</th>
+                    </tr>
+                  </thead>
+                  <tbody id="adminRankingBody"></tbody>
+                </table>
+              </div>
+            </div>
           </div>
         </div>
       </section>
@@ -845,6 +917,7 @@
     <script>
       const STORAGE_KEY = 'jornada_mate_ranking_v1';
       const CLOUD_RANKING_URL = 'https://api.sheetbest.com/sheets/ff4707ef-868c-4b6d-821a-f3fb4f7988a2';
+      const ORGANIZER_PASSWORD_HASH = 'bf8184eeaa47e6d4a869bb4a1c25cc8e98167faf75db1b355b54e05932f7eef3';
 
       const levels = [
         {
@@ -945,12 +1018,23 @@
       const restartBtn = document.getElementById('restartBtn');
       const qrBtn = document.getElementById('qrBtn');
       const podioBtn = document.getElementById('podioBtn');
+      const manageBtn = document.getElementById('manageBtn');
       const backToGameBtn = document.getElementById('backToGameBtn');
       const qrCodeImage = document.getElementById('qrCodeImage');
       const qrUrl = document.getElementById('qrUrl');
       const organizerTitle = document.getElementById('organizerTitle');
       const qrView = document.getElementById('qrView');
       const podioView = document.getElementById('podioView');
+      const adminView = document.getElementById('adminView');
+      const adminStatus = document.getElementById('adminStatus');
+      const adminLogin = document.getElementById('adminLogin');
+      const adminPassword = document.getElementById('adminPassword');
+      const unlockAdminBtn = document.getElementById('unlockAdminBtn');
+      const adminActions = document.getElementById('adminActions');
+      const adminRankingTable = document.getElementById('adminRankingTable');
+      const adminRankingBody = document.getElementById('adminRankingBody');
+      const resetRankingBtn = document.getElementById('resetRankingBtn');
+      const lockAdminBtn = document.getElementById('lockAdminBtn');
       const podiumFirstName = document.getElementById('podiumFirstName');
       const podiumSecondName = document.getElementById('podiumSecondName');
       const podiumThirdName = document.getElementById('podiumThirdName');
@@ -970,6 +1054,7 @@
       let startTimestamp = 0;
       let timerInterval = null;
       let hasStarted = false;
+      let organizerUnlocked = false;
 
       function normalizeText(value) {
         return String(value || '')
@@ -1294,6 +1379,118 @@
         });
       }
 
+      function renderAdminRanking() {
+        if (!organizerUnlocked) return;
+
+        const ranking = sortRanking(getRanking());
+        adminRankingBody.innerHTML = '';
+
+        if (ranking.length === 0) {
+          adminRankingBody.innerHTML = '<tr><td colspan="3">No hay participantes.</td></tr>';
+          return;
+        }
+
+        ranking.forEach((entry) => {
+          const row = document.createElement('tr');
+          const nameCell = document.createElement('td');
+          const scoreCell = document.createElement('td');
+          const actionCell = document.createElement('td');
+          const deleteButton = document.createElement('button');
+
+          nameCell.textContent = entry.name;
+          scoreCell.textContent = String(entry.score);
+          deleteButton.type = 'button';
+          deleteButton.className = 'delete-participant-btn';
+          deleteButton.textContent = 'Borrar';
+          deleteButton.addEventListener('click', () => deleteParticipant(entry));
+          actionCell.appendChild(deleteButton);
+          row.append(nameCell, scoreCell, actionCell);
+          adminRankingBody.appendChild(row);
+        });
+      }
+
+      function setAdminUnlocked(isUnlocked) {
+        organizerUnlocked = isUnlocked;
+        adminLogin.hidden = isUnlocked;
+        adminActions.hidden = !isUnlocked;
+        adminRankingTable.hidden = !isUnlocked;
+        adminStatus.textContent = isUnlocked
+          ? 'Gestión desbloqueada. Los cambios se aplican también en la nube.'
+          : 'La gestión está bloqueada.';
+
+        if (isUnlocked) {
+          renderAdminRanking();
+        } else {
+          adminRankingBody.innerHTML = '';
+        }
+      }
+
+      function requestAdminAccess() {
+        updateOrganizerView('admin');
+        showScreen(organizerScreen);
+        if (!organizerUnlocked) adminPassword.focus();
+      }
+
+      async function hashPassword(value) {
+        const encoded = new TextEncoder().encode(value);
+        const digest = await crypto.subtle.digest('SHA-256', encoded);
+        return Array.from(new Uint8Array(digest), (byte) => byte.toString(16).padStart(2, '0')).join('');
+      }
+
+      async function unlockAdmin() {
+        const passwordHash = await hashPassword(adminPassword.value);
+        if (passwordHash === ORGANIZER_PASSWORD_HASH) {
+          setAdminUnlocked(true);
+          adminPassword.value = '';
+        } else {
+          adminStatus.textContent = 'Clave incorrecta.';
+          adminPassword.select();
+        }
+      }
+
+      async function deleteCloudParticipant(entry) {
+        const endpoint = `${CLOUD_RANKING_URL}/name/${encodeURIComponent(entry.name)}`;
+        const response = await fetch(endpoint, { method: 'DELETE' });
+        if (!response.ok) throw new Error('No se pudo borrar el participante en la nube.');
+      }
+
+      async function deleteParticipant(entry) {
+        if (!organizerUnlocked || !window.confirm(`¿Borrar a ${entry.name} del ranking?`)) return;
+
+        try {
+          await deleteCloudParticipant(entry);
+          const remaining = getRanking().filter((item) => normalizeText(item.name) !== normalizeText(entry.name));
+          localStorage.setItem(STORAGE_KEY, JSON.stringify(sortRanking(remaining)));
+          renderRanking();
+          updatePodium();
+          renderOrganizerPodium();
+          renderAdminRanking();
+          adminStatus.textContent = `${entry.name} fue eliminado correctamente.`;
+        } catch (error) {
+          adminStatus.textContent = error.message;
+        }
+      }
+
+      async function resetRanking() {
+        if (!organizerUnlocked || !window.confirm('¿Borrar definitivamente todos los participantes?')) return;
+
+        const ranking = getRanking();
+        try {
+          for (const entry of ranking) {
+            await deleteCloudParticipant(entry);
+          }
+
+          localStorage.removeItem(STORAGE_KEY);
+          renderRanking();
+          updatePodium();
+          renderOrganizerPodium();
+          renderAdminRanking();
+          adminStatus.textContent = 'Ranking reseteado correctamente.';
+        } catch (error) {
+          adminStatus.textContent = error.message;
+        }
+      }
+
       function renderOrganizerQR() {
         const currentUrl = window.location.href;
         const qrUrlValue = `https://api.qrserver.com/v1/create-qr-code/?size=300x300&data=${encodeURIComponent(currentUrl)}`;
@@ -1303,13 +1500,16 @@
 
       function updateOrganizerView(mode) {
         const isQR = mode === 'qr';
-        organizerTitle.textContent = isQR ? 'Código QR de acceso' : 'Podio en vivo';
+        const isAdmin = mode === 'admin';
+        organizerTitle.textContent = isQR ? 'Código QR de acceso' : isAdmin ? 'Gestionar ranking' : 'Podio en vivo';
         qrView.classList.toggle('active', isQR);
-        podioView.classList.toggle('active', !isQR);
+        podioView.classList.toggle('active', !isQR && !isAdmin);
+        adminView.classList.toggle('active', isAdmin);
 
-        if (!isQR) {
+        if (!isQR && !isAdmin) {
           renderOrganizerPodium();
         }
+        if (isAdmin) renderAdminRanking();
       }
 
       function updatePodium() {
@@ -1410,6 +1610,17 @@
       podioBtn.addEventListener('click', () => {
         updateOrganizerView('podio');
         showScreen(organizerScreen);
+      });
+
+      manageBtn.addEventListener('click', requestAdminAccess);
+      unlockAdminBtn.addEventListener('click', unlockAdmin);
+      adminPassword.addEventListener('keydown', (event) => {
+        if (event.key === 'Enter') unlockAdmin();
+      });
+      resetRankingBtn.addEventListener('click', resetRanking);
+      lockAdminBtn.addEventListener('click', () => {
+        setAdminUnlocked(false);
+        updateOrganizerView('qr');
       });
 
       backToGameBtn.addEventListener('click', () => {
