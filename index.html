@@ -1608,9 +1608,9 @@
 
       function renderOrganizerQR() {
         const currentUrl = window.location.origin + window.location.pathname;
-        const qrUrlValue = `https://api.qrserver.com/v1/create-qr-code/?size=300x300&data=${encodeURIComponent(currentUrl)}`;
-        qrCodeImage.src = qrUrlValue;
-        qrUrl.textContent = currentUrl;
+      const qrUrlValue = `https://api.qrserver.com/v1/create-qr-code/?size=300x300&data=${encodeURIComponent(currentUrl)}`;
+      qrCodeImage.src = qrUrlValue;
+      qrUrl.textContent = currentUrl;
 
       }
 
