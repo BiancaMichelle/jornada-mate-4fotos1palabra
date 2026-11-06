@@ -132,6 +132,12 @@
       button:hover { transform: translateY(-1px); }
       button:active { transform: translateY(0); }
 
+      .mode-btn:disabled {
+        opacity: 0.45;
+        cursor: not-allowed;
+        transform: none;
+      }
+
       .primary-btn {
         width: 100%;
         background: linear-gradient(135deg, var(--primary), var(--primary-dark));
@@ -768,8 +774,8 @@
             Ingresá tu nombre o apodo para iniciar la ronda individual. El cronómetro arranca al hacer clic en <strong>Comenzar</strong>.
           </p>
           <div class="mode-picker" role="radiogroup" aria-label="Elegí la versión">
-            <button type="button" class="mode-btn active" data-mode="informatica" role="radio" aria-checked="true">💻 Versión Informática</button>
-            <button type="button" class="mode-btn" data-mode="yerba" role="radio" aria-checked="false">🧉 Fiesta de la Yerba</button>
+            <button type="button" class="mode-btn" data-mode="informatica" role="radio" aria-checked="false" disabled>💻 Versión Informática</button>
+            <button type="button" class="mode-btn active" data-mode="yerba" role="radio" aria-checked="true">🧉 Fiesta de la Yerba</button>
           </div>
           <input id="playerName" class="field" type="text" maxlength="60" placeholder="Ej: Martina_2 o Juan_7" />
           <button id="startBtn" class="primary-btn">Comenzar</button>
@@ -1105,8 +1111,8 @@
         ]
       };
 
-      let levels = levelSets.informatica;
-      let selectedMode = 'informatica';
+      let levels = levelSets.yerba;
+      let selectedMode = 'yerba';
 
       const registerScreen = document.getElementById('registerScreen');
       const gameScreen = document.getElementById('gameScreen');
