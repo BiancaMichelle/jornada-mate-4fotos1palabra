@@ -504,11 +504,15 @@
         right: 14px;
         top: 14px;
         z-index: 20;
-        display: flex;
+        display: none; /* oculto por defecto */
         flex-wrap: wrap;
         justify-content: flex-end;
         gap: 8px;
         max-width: min(92vw, 280px);
+      }
+
+      body.is-organizer .organizer-controls {
+        display: flex;
       }
 
       .organizer-btn {
@@ -939,6 +943,8 @@
     </div>
 
     <script>
+      const IS_ORGANIZER = new URLSearchParams(window.location.search).get('organizador') === '1';
+      document.body.classList.toggle('is-organizer', IS_ORGANIZER);
       const STORAGE_KEY = 'jornada_mate_ranking_v1';
       const CLOUD_RANKING_URL = 'https://api.sheetbest.com/sheets/ff4707ef-868c-4b6d-821a-f3fb4f7988a2';
       const ORGANIZER_PASSWORD_HASH = 'bf8184eeaa47e6d4a869bb4a1c25cc8e98167faf75db1b355b54e05932f7eef3';
@@ -1596,7 +1602,7 @@
       }
 
       function renderOrganizerQR() {
-        const currentUrl = window.location.href;
+        const currentUrl = window.location.origin + window.location.pathname;
         const qrUrlValue = `https://api.qrserver.com/v1/create-qr-code/?size=300x300&data=${encodeURIComponent(currentUrl)}`;
         qrCodeImage.src = qrUrlValue;
         qrUrl.textContent = currentUrl;
