@@ -504,15 +504,19 @@
         right: 14px;
         top: 14px;
         z-index: 20;
-        display: none; /* oculto por defecto */
+        display: flex;
         flex-wrap: wrap;
         justify-content: flex-end;
         gap: 8px;
         max-width: min(92vw, 280px);
       }
 
-      body.is-organizer .organizer-controls {
-        display: flex;
+      #manageBtn {
+        display: none;
+      }
+
+      body.is-organizer #manageBtn {
+        display: inline-block;
       }
 
       .organizer-btn {
@@ -1536,6 +1540,7 @@
       }
 
       function requestAdminAccess() {
+        if (!IS_ORGANIZER) return;
         updateOrganizerView('admin');
         showScreen(organizerScreen);
         if (!organizerUnlocked) adminPassword.focus();
@@ -1606,6 +1611,7 @@
         const qrUrlValue = `https://api.qrserver.com/v1/create-qr-code/?size=300x300&data=${encodeURIComponent(currentUrl)}`;
         qrCodeImage.src = qrUrlValue;
         qrUrl.textContent = currentUrl;
+
       }
 
       function updateOrganizerView(mode) {
