@@ -693,6 +693,26 @@
       .actions {
         margin-top: 18px;
       }
+      .mode-picker {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: 10px;
+        margin-bottom: 14px;
+      }
+
+      .mode-btn {
+        background: #eef3ee;
+        color: var(--primary-dark);
+        border: 2px solid rgba(45, 106, 79, 0.2);
+        padding: 14px 8px;
+        font-size: 0.9rem;
+      }
+
+      .mode-btn.active {
+        background: linear-gradient(135deg, var(--primary), var(--primary-dark));
+        color: #fff;
+        border-color: var(--primary-dark);
+      }
 
       @media (max-width: 420px) {
         .card {
@@ -739,6 +759,10 @@
           <p class="subtitle">
             Ingresá tu nombre o apodo para iniciar la ronda individual. El cronómetro arranca al hacer clic en <strong>Comenzar</strong>.
           </p>
+          <div class="mode-picker" role="radiogroup" aria-label="Elegí la versión">
+            <button type="button" class="mode-btn active" data-mode="informatica" role="radio" aria-checked="true">💻 Versión Informática</button>
+            <button type="button" class="mode-btn" data-mode="yerba" role="radio" aria-checked="false">🧉 Fiesta de la Yerba</button>
+          </div>
           <input id="playerName" class="field" type="text" maxlength="60" placeholder="Ej: Martina_2 o Juan_7" />
           <button id="startBtn" class="primary-btn">Comenzar</button>
           <div id="registerMessage" class="register-message" aria-live="polite"></div>
@@ -919,80 +943,160 @@
       const CLOUD_RANKING_URL = 'https://api.sheetbest.com/sheets/ff4707ef-868c-4b6d-821a-f3fb4f7988a2';
       const ORGANIZER_PASSWORD_HASH = 'bf8184eeaa47e6d4a869bb4a1c25cc8e98167faf75db1b355b54e05932f7eef3';
 
-      const levels = [
-        {
-          title: 'Nivel 1',
-          images: [
-            'assets/n1_img1.jpg',
-            'assets/n1_img2.jpg',
-            'assets/n1_img3.jpg',
-            'assets/n1_img4.jpg'
-          ],
-          answers: ['almacenamiento', 'almacenar'],
-          correctWord: 'almacenamiento',
-          totalLetters: 15
-        },
-        {
-          title: 'Nivel 2',
-          images: [
-            'assets/n2_img1.jpg',
-            'assets/n2_img2.jpg',
-            'assets/n2_img3.jpg',
-            'assets/n2_img4.jpg'
-          ],
-          answers: ['filtro', 'filtrar'],
-          correctWord: 'filtro',
-          totalLetters: 10
-        },
-        {
-          title: 'Nivel 3',
-          images: [
-            'assets/n3_img1.jpg',
-            'assets/n3_img2.jpg',
-            'assets/n3_img3.jpg',
-            'assets/n3_img4.jpg'
-          ],
-          answers: ['energia'],
-          correctWord: 'energia',
-          totalLetters: 10
-        },
-        {
-          title: 'Nivel 4',
-          images: [
-            'assets/n4_img1.jpg',
-            'assets/n4_img2.jpg',
-            'assets/n4_img3.jpg',
-            'assets/n4_img4.jpg'
-          ],
-          answers: ['red', 'conexion'],
-          correctWord: 'red',
-          totalLetters: 10
-        },
-        {
-          title: 'Nivel 5',
-          images: [
-            'assets/n5_img1.jpg',
-            'assets/n5_img2.jpg',
-            'assets/n5_img3.jpg',
-            'assets/n5_img4.jpg'
-          ],
-          answers: ['reiniciar'],
-          correctWord: 'reiniciar',
-          totalLetters: 10
-        },
-        {
-          title: 'Nivel 6',
-          images: [
-            'assets/n6_img1.jpg',
-            'assets/n6_img2.jpg',
-            'assets/n6_img3.jpg',
-            'assets/n6_img4.jpg'
-          ],
-          answers: ['servidor'],
-          correctWord: 'servidor',
-          totalLetters: 12
-        }
-      ];
+
+      const levelSets = {
+        informatica: [
+          {
+            title: 'Nivel 1',
+            images: [
+              'assets/n1_img1.jpg',
+              'assets/n1_img2.jpg',
+              'assets/n1_img3.jpg',
+              'assets/n1_img4.jpg'
+            ],
+            answers: ['almacenamiento', 'almacenar'],
+            correctWord: 'almacenamiento',
+            totalLetters: 15
+          },
+          {
+            title: 'Nivel 2',
+            images: [
+              'assets/n2_img1.jpg',
+              'assets/n2_img2.jpg',
+              'assets/n2_img3.jpg',
+              'assets/n2_img4.jpg'
+            ],
+            answers: ['filtro', 'filtrar'],
+            correctWord: 'filtro',
+            totalLetters: 10
+          },
+          {
+            title: 'Nivel 3',
+            images: [
+              'assets/n3_img1.jpg',
+              'assets/n3_img2.jpg',
+              'assets/n3_img3.jpg',
+              'assets/n3_img4.jpg'
+            ],
+            answers: ['energia'],
+            correctWord: 'energia',
+            totalLetters: 10
+          },
+          {
+            title: 'Nivel 4',
+            images: [
+              'assets/n4_img1.jpg',
+              'assets/n4_img2.jpg',
+              'assets/n4_img3.jpg',
+              'assets/n4_img4.jpg'
+            ],
+            answers: ['red', 'conexion'],
+            correctWord: 'red',
+            totalLetters: 10
+          },
+          {
+            title: 'Nivel 5',
+            images: [
+              'assets/n5_img1.jpg',
+              'assets/n5_img2.jpg',
+              'assets/n5_img3.jpg',
+              'assets/n5_img4.jpg'
+            ],
+            answers: ['reiniciar'],
+            correctWord: 'reiniciar',
+            totalLetters: 10
+          },
+          {
+            title: 'Nivel 6',
+            images: [
+              'assets/n6_img1.jpg',
+              'assets/n6_img2.jpg',
+              'assets/n6_img3.jpg',
+              'assets/n6_img4.jpg'
+            ],
+            answers: ['servidor'],
+            correctWord: 'servidor',
+            totalLetters: 12
+          }
+        ],
+        yerba: [
+          {
+            title: 'Nivel 1',
+            images: [
+              'assets/y1_img1.jpg',
+              'assets/y1_img2.jpg',
+              'assets/y1_img3.jpg',
+              'assets/y1_img4.jpg'
+            ],
+            answers: ['montañita'],
+            correctWord: 'montañita',
+            totalLetters: 12
+          },
+          {
+            title: 'Nivel 2',
+            images: [
+              'assets/y2_img1.jpg',
+              'assets/y2_img2.jpg',
+              'assets/y2_img3.jpg',
+              'assets/y2_img4.jpg'
+            ],
+            answers: ['termo'],
+            correctWord: 'termo',
+            totalLetters: 10
+          },
+          {
+            title: 'Nivel 3',
+            images: [
+              'assets/y3_img1.jpg',
+              'assets/y3_img2.jpg',
+              'assets/y3_img3.jpg',
+              'assets/y3_img4.jpg'
+            ],
+            answers: ['mate'],
+            correctWord: 'mate',
+            totalLetters: 10
+          },
+          {
+            title: 'Nivel 4',
+            images: [
+              'assets/y4_img1.jpg',
+              'assets/y4_img2.jpg',
+              'assets/y4_img3.jpg',
+              'assets/y4_img4.jpg'
+            ],
+            answers: ['yerba'],
+            correctWord: 'yerba',
+            totalLetters: 10
+          },
+          {
+            title: 'Nivel 5',
+            images: [
+              'assets/y5_img1.jpg',
+              'assets/y5_img2.jpg',
+              'assets/y5_img3.jpg',
+              'assets/y5_img4.jpg'
+            ],
+            answers: ['tereré', 'terere'],
+            correctWord: 'terere',
+            totalLetters: 10
+          },
+          {
+            title: 'Nivel 6',
+            images: [
+              'assets/y6_img1.jpg',
+              'assets/y6_img2.jpg',
+              'assets/y6_img3.jpg',
+              'assets/y6_img4.jpg'
+            ],
+            answers: ['apóstoles', 'apostoles'],
+            correctWord: 'apostoles',
+            totalLetters: 12
+          }
+        ]
+      };
+
+      let levels = levelSets.informatica;
+      let selectedMode = 'informatica';
 
       const registerScreen = document.getElementById('registerScreen');
       const gameScreen = document.getElementById('gameScreen');
@@ -1590,6 +1694,7 @@
         }
 
         hideRegisterMessage();
+        levels = levelSets[selectedMode];
         currentPlayer = name;
         currentLevelIndex = 0;
         score = 0;
@@ -1598,6 +1703,17 @@
         showScreen(gameScreen);
         renderLevel();
       }
+
+      document.querySelectorAll('.mode-btn').forEach((btn) => {
+        btn.addEventListener('click', () => {
+          selectedMode = btn.dataset.mode;
+          document.querySelectorAll('.mode-btn').forEach((b) => {
+            const isOn = b === btn;
+            b.classList.toggle('active', isOn);
+            b.setAttribute('aria-checked', String(isOn));
+          });
+        });
+      });
 
       startBtn.addEventListener('click', beginGame);
       clearBtn.addEventListener('click', clearWord);
